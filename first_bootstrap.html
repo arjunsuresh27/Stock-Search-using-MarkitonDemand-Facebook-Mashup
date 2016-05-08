@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Stock Search</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bootstrap-3.3.6-dist/bootstrap-3.3.6-dist/css/bootstrap.min.css"> 
+
+  <script src="jquery-1.12.2.min.js"></script>
+  <script src="bootstrap-3.3.6-dist/bootstrap-3.3.6-dist/js/bootstrap.min.js"></script>
+  <!-- This is for the toggle button in the main page -->
+  <link href="bootstrap-toggle-master/bootstrap-toggle-master/css/bootstrap-toggle.min.css" rel="stylesheet">
+  <script src="bootstrap-toggle-master/bootstrap-toggle-master/js/bootstrap-toggle.min.js"></script>
+  <script src="moment.js"></script>
+  <link rel="stylesheet" href="font-awesome-4.5.0/css/font-awesome.min.css">
+  <script src="https://code.highcharts.com/stock/highstock.js"></script>
+  <script type="text/javascript" src="INT.js"></script>
+  <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+  <!-- This is for the auto complete -->
+  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+  <link rel="stylesheet" href="auto_complete.css" />
+  
+  
+  <style>
+  .outer_container{
+
+  }
+  
+  html{
+	min-height:100%;
+  
+  }
+  body{
+    background-image: url("bg.png");
+    background-size:cover;
+	background-repeat:no-repeat;
+	min-height:100%;
+	background-position:fixed;
+    background-attachment:fixed;
+  }
+  
+  .container{
+background-position:fixed;
+  }
+  .panel-default{
+    padding:2%;
+  }
+  
+  .panel2-default{
+  
+  }
+  
+  .highcharts-container{width:100% !important; height:100% !important;
+ 
+  
+  }
+  
+
+ 
+  @media screen and (max-width: 200px){
+      
+  .yahooImg
+    {
+        width: 200px;
+    }
+  }
+  @media screen and (max-width:300px){
+      
+  .yahooImg
+    {
+        width: 300px;
+    }
+  }
+
+      
+  
+  
+  .r1{
+  background-color:rgb(247,247,247);
+    }
+	
+	.star2{
+	background-color:yellow;
+	
+	}
+
+	.tra{
+	
+	
+	}
+	
+	.fav_a{
+	
+	
+	
+	}
+
+
+  </style>
+  
+  <script>
+
+  
+  function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+  
+  //This is the function for auto complete  
+
+	$(function() {
+
+		$("#stock")
+			.focus()
+			.autocomplete({
+				source: function(request,response) {
+					$.ajax({
+						beforeSend: function(){ 
+							$("span.help-inline").show();
+							$("span.label-info").empty().hide();
+						},
+						url: "http://dev.markitondemand.com/api/v2/Lookup/jsonp",
+						dataType: "jsonp",
+						data: {
+							input: request.term
+						},
+						success: function(data) {
+						
+						$("#er").html("");
+						
+							response( $.map(data, function(item) {
+								return {
+									label: item.Name + " (" +item.Exchange+ ")",
+									value: item.Symbol
+								}
+							}));
+							$("span.help-inline").hide();
+						},
+						error: function(data)
+						{
+						alert("Error in auto complete API, pls try again after some time");
+						
+						}
+						
+					});
+				},
+				minLength: 0,
+				select: function( event, ui ) {
+					//console.log(ui.item);
+					$("span.label-info").html("You selected " + ui.item.label).fadeIn("fast");
+				},
+				open: function() {
+					//$(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+				},
+				close: function() {
+					//$(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+				}
+			})
+		;
+	});
+
+//auto complete function is done
+
+
+
+ var check= [];
+ var fav_cnme= [];
+ var fav_csp= [];
+ var fav_cch= [];
+ var fav_ccp= [];
+ var fav_cmp= [];
+ //var main_content= [];
+ var $text;
+ var STAT1;
+ 
+ //This is for the click of fav_a buttons
+$(document).on("click",".fav_a",function(){
+
+
+	$("#next").prop('disabled', false);	
+//alert("You clicked me"+$(this).closest("td").text());
+
+
+   var $row = $(this).closest("tr");    // Find the row
+   $text = $row.find(".FS").text(); // Find the text
+   
+    //alert($text); 
+   $("#star_ins").css("color","yellow"); 
+   
+
+   
+   //This code is for the filling up of data
+
+
+	//first erase the previous data of News_Content
+	$("#News_Content").html('');
+
+
+	var stock=$text;
+	
+	//alert(stock );
+	
+//first ajax call for Current stock details
+
+	$.ajax({
+		beforeSend:function(){
+            $("#current_info").text("Loading current stock info...");
+        },
+	  
+	  type: "GET",
+      dataType: "json",
+      url: "http://arjunaws-env.us-west-2.elasticbeanstalk.com", //Relative or absolute path to arjunaws-env.us-west-2.elasticbeanstalk.com file
+      data: {"Sym":stock},
+      success: function(data) {
+	  
+	  //alert(JSON.stringify(data));
+		
+		status=data.Status;
+		STAT1=status;
+		//alert("Ajax call for Current Stock: "+status);
+
+		//alert(data.status);
+		if(data.status==undefined)
+		{
+		//STAT1="FAILURE";
+		//$("#myCarousel").carousel(0);		//move to home screen
+		//$("#er").html("Select a valid entry");
+		//$("#next").prop('disabled', true);
+		}
+		
+		
+		if(status=="SUCCESS")
+		{
+		
+		$("#er").html(""); //if success remove the error message
+		
+		
+		 Name=data.Name;
+		 Symbol=data.Symbol;
+		 LastPrice=data.LastPrice;
+		 //Modify Change field
+		 Change=data.Change;
+		 //alert(Change);
+		 Change=parseFloat(Change).toFixed(2);
+		 //alert(Change);
+		 
+		 
+		 ChangePercent=data.ChangePercent;
+		 ChangePercent_org=parseFloat(ChangePercent).toFixed(2);
+		 
+		if(ChangePercent_org<0)
+		{
+			ChangePercent="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change (Change Percent)"+"</th>" + "<td style=\"color:red\"            >"+Change +" ( "+ChangePercent_org+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangePercent);
+			
+			//for local storage in fav section
+			fav_change="<td class=\"CCP\"  style=\"color:red; font-family:sans-serif\"            >"+Change +" ( "+ChangePercent_org+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" ;
+		}
+		else 
+		{
+			ChangePercent="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change (Change Percent)"+"</th>" + "<td  style=\"color:green\"                >"+Change +" ( "+ChangePercent_org+  "%"+ " )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"UP!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangePercent);
+			
+			//for local storege in fav section
+			fav_change="<td class=\"CCP\" style=\"color:green; font-family:sans-serif\"            >"+Change +" ( "+ChangePercent_org+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" ;
+		}
+		 
+		 
+		 
+		 
+		 
+		 Timestamp=data.Timestamp;
+		// alert(Timestamp);
+		 Timestamp=moment(Timestamp).format('DD MMMM YYYY, HH:MM:SS a');
+		 //alert(Timestamp);
+		 MSDate=data.MSDate;
+		 MarketCap=data.MarketCap;
+		 MarketCap_org=MarketCap;
+		 if(MarketCap> 1000000000)
+		 {
+		 MarketCap=MarketCap/1000000000;
+		 MarketCap=parseFloat(MarketCap).toFixed(2);
+		 MarketCap=MarketCap+" Billion";
+		 //alert(MarketCap);
+		 fav_MarketCap="<td class=\"MCC\" style=\"font-family:sans-serif\">"+MarketCap+ "</td>";
+		 }
+		 else if(MarketCap>1000000)
+		 {
+		 MarketCap = MarketCap/1000000 ;
+		 MarketCap=parseFloat(MarketCap).toFixed(2);
+		 MarketCap=MarketCap+" Million";
+		 fav_MarketCap="<td class=\"MCC\" style=\"font-family:sans-serif\">"+MarketCap+ "</td>";
+		 
+		 }
+		 
+		
+		 	
+         MarketCap= "<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Market Cap"+"</th>"+ "<td>"+MarketCap+"</td>"+"</tr>";
+		 //alert(MarketCap);
+		 
+		 Volume=data.Volume;
+		 //alert(Volume);
+		 
+		 ChangeYTD=data.ChangeYTD;
+		 //alert("The ChangeYTD from JSON is "+ChangeYTD);
+		 ChangeYTD=parseFloat(ChangeYTD).toFixed(2);
+		 
+		 ChangePercentYTD=data.ChangePercentYTD;
+		 ChangePercentYTD=parseFloat(ChangePercentYTD).toFixed(2);
+		 if(ChangePercentYTD<0)
+		{
+			ChangeYTD="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change YTD (Change Percent YTD)"+"</th>" + "<td style=\"color:red\">"+ChangeYTD +" ( "+ChangePercentYTD+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangeYTD);
+		}
+		else 
+		{
+			ChangeYTD="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change YTD (Change Percent YTD)"+"</th>" + "<td  style=\"color:green\">"+ChangeYTD +" ( "+ChangePercentYTD+  "%"+ " )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"UP!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangeYTD);
+		}
+		 
+		 
+		 
+		 
+		 
+		 
+		 //alert(ChangePercentYTD);
+		 High=data.High;
+		 High=parseFloat(High).toFixed(2);
+		 Low=data.Low;
+		 Low=parseFloat(Low).toFixed(2);
+		 Open=data.Open;
+		 Open=parseFloat(Open).toFixed(2);
+		 
+		 
+		 $("#current_info").html(
+		 
+			
+		 		 "<table class= \"table table-striped\">"+
+					"<tr>" +
+						"<th >  Name </th>" + "<td>"+Name+"</td>"+
+					"</tr>"+
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Symbol </th>" + "<td>"+Symbol+"</td>"+
+					"</tr>"+
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Last Price </th>" + "<td>"+"$ "+LastPrice+"</td>"+
+					"</tr>"+
+					
+					ChangePercent +
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Time and Date </th>" + "<td>"+Timestamp+"</td>"+
+					"</tr>"+					
+					
+					MarketCap + 
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Volume </th>" + "<td>"+Volume+"</td>"+
+					"</tr>"+					
+					
+					ChangeYTD +
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  High Price </th>" + "<td>"+"$ "+High+"</td>"+
+					"</tr>"+					
+		 
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Low Price </th>" + "<td>"+"$ "+Low+"</td>"+
+					"</tr>"+		 
+
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Opening Price </th>" + "<td>"+"$ "+Open+"</td>"+
+					"</tr>"+					
+		 
+		 		"</table>"
+		 
+		 );
+		 
+		 
+		 
+		 //alert("<img src=\"http://chart.finance.yahoo.com/t?s="+Symbol+"&lang=en-US&width=400&height=300\">");
+		 
+		 $("#yahoo").html(
+		 
+		"<img class=\"yahooImg\" src=\"http://chart.finance.yahoo.com/t?s="+Symbol+"&lang=en-US&width=270&height=350\" style=\"min-width:100%;max-height:350px;\">"
+		 
+		 
+		  
+		 
+		 );
+		 
+
+		
+		
+		//alert(data.Open);
+		
+		//document.getElementByID("current_info").innerHTML=Open;
+		
+		$("#myCarousel").carousel(1);
+		
+		}
+		
+		
+		
+		//Failure case when no data is returned by PHP file
+
+		else
+		{
+		
+		
+		}
+
+         },
+	  
+	  error: function(data)
+	  {
+	  //alert("Failure");
+	  
+	  }
+	  
+	  
+    });
+	
+//2nd ajax call for the news feed
+
+
+	var stock=$text;
+	
+	$.ajax({
+		beforeSend:function(){
+            $("#News_Content").text("Loading News Content info...");
+        },
+	  type: "GET",
+      dataType: "json",
+      url: "http://arjunaws-env.us-west-2.elasticbeanstalk.com", //Relative or absolute path to arjunaws-env.us-west-2.elasticbeanstalk.com file
+      data: {"feed":stock},  //set the feed value
+	  success: function(data) {
+	  //alert(JSON.stringify(data));
+	  //alert(data.responseData.results[0]);
+	  //var d=JSON.stringify(data);
+	  //alert(d);
+	  //alert(data.responseData.results.length);
+
+
+	  
+	  
+	  //alert(JSON.stringify(data.responseStatus));
+	  if(data.responseStatus==200)
+	  {
+	  $("#News_Content").html("");
+	  //alert("Call for 2nd News feed call status: " +data.responseStatus);
+	  
+
+
+		  for(i=0;i<data.responseData.results.length;i++)
+		{
+			entry=data.responseData.results[i];
+			//alert(eval(JSON.stringify(entry.content)));
+			title=entry.titleNoFormatting;
+			//alert(title);
+			content=entry.content;
+			//alert(content);
+			publisher=entry.publisher;
+			//alert(publisher);
+			link=entry.unescapedUrl;
+			//alert(link);
+			date_time=entry.publishedDate;
+			date_time=date_time.substring(0,25);
+			//alert(date_time);
+			
+			
+	  
+			$("#News_Content").append(
+	  
+				"<div class=\"panel panel-default\" style=\"background: linear-gradient(rgb(232,232,232),rgb(244,244,244) );\"      >"+
+					
+			
+						"<p><a href=\""+link+"\" style=\"color:#5B91C1;\" target=\"_blank\"><strong>"+title+"</strong></a></p>"+
+									
+						"<p>"+content+"</p>"+
+							
+						"<p ><strong>Publisher: "+publisher+"</strong></p>"+
+						
+						"<p><strong>Date: "+date_time+"</strong></p>"+
+			
+					
+				"</div>"
+	  
+	   );
+	  
+	 	  
+	  }  
+	  
+	  
+	  
+	  }
+	  
+	  else
+	  {
+	  //alert("Couldnt get the data at this time");	  
+	  
+	  }
+	  
+	  
+
+
+	  },
+	  error: function(data)
+	  {
+	  //alert("Failure");
+	  
+	  }
+	
+	});
+
+
+//3rd call to Historical Charts
+
+	$(function(){
+
+		var sym = $text; ;
+		var dur = 1095 ;
+		
+		new Markit.InteractiveChartApi(sym, dur);
+	});
+   
+   
+
+   
+   
+//if Success then move the corousal
+
+//if(STAT1=="SUCCESS")
+//{
+//alert("Moving automatically");
+//$("#myCarousel").carousel(1);
+
+//}   
+   
+   
+   
+   
+   
+   
+  
+  
+}); 
+ 
+  
+//This is JQuery method
+
+$(document).ready(function(){
+
+$("#next").prop('disabled', true);		
+//localStorage.clear();
+WID=$("div.item:nth-child(1) > div:nth-child(1) > div:nth-child(1)").width();
+
+//alert("The current_info width:"+$("div.item:nth-child(1) > div:nth-child(1) > div:nth-child(1)").width());
+
+if(localStorage.length)
+{
+
+//first clear the old data
+
+//$("#main_tab").html("");
+
+main_favsym=JSON.parse(localStorage.getItem("favsym"));
+//alert(main_favsym);
+
+for(var i=0;i<main_favsym.length;i++)
+{
+	FS=main_favsym[i];
+	//alert(FS+i)
+	$.ajax({
+	  async:false,
+	  type: "GET",
+      dataType: "json",
+      url: "http://arjunaws-env.us-west-2.elasticbeanstalk.com", //Relative or absolute path to arjunaws-env.us-west-2.elasticbeanstalk.com file
+      data: {"Sym":FS},
+      success: function(data) {
+	  
+	  //alert(JSON.stringify(data));
+		
+		ST=data.Status;
+	//	alert("Ajax call for Current Stock: "+ST);
+		if(ST=="SUCCESS")
+		{
+			FC=data.Name;
+		 //alert(FC);
+		 FS=data.Symbol;
+		 //alert(FS);
+		 SP=data.LastPrice;
+		 SP=parseFloat(SP).toFixed(2);
+		 //alert(SP);
+		 //Modify Change field
+		 CH=data.Change;
+		 //alert(CH);
+		 //alert(CH);
+		 CH=parseFloat(CH).toFixed(2);
+		 //alert(CH);
+		 
+		 
+		 CP=data.ChangePercent;
+		 CP=parseFloat(CP).toFixed(2);
+		 //alert(CP);
+		 
+		if(CH<0)
+			{
+				CCP="<td class=\"CCP\" style=\"color:red\">"+CH +" ( "+CP+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" ;
+			//	alert(CCP);
+			
+			
+
+			}
+		else 
+			{
+				CCP="<td  class=\"CCP\" style=\"color:green\"                >"+CH +" ( "+CP+  "%"+ " )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"UP!\" width=\"15\" height=\"15 \"> </img>" +"</td>";
+				//alert(CCP);
+			
+			}
+		 
+		 		 
+			MC=data.MarketCap;
+			//alert(MC);
+	
+			//computation for market cap
+			if(MC> 1000000000)
+			{
+				MC=MC/1000000000;
+				MC=parseFloat(MC).toFixed(2);
+				MC=MC+" Billion";
+				//alert(MC);
+				MCC="<td class=\"MCC\"   style=\"font-family:sans-serif\">"+MC+ "</td>";
+				//alert(MCC);
+			}
+			else if(MC>1000000)
+			{
+				MC = MC/1000000 ;
+				MC=parseFloat(MC).toFixed(2);
+				MC=MC+" Million";
+				MCC="<td class=\"MCC\" style=\"font-family:sans-serif\">"+MC+ "</td>";
+				//alert(MCC);
+			}
+			
+			//alert("Appending: "+FS );
+		 
+		 
+		 
+		$("#main_tab").append(
+		//html code for the entire row
+		
+		
+		
+			"<tr class=\"DR\">"+
+				"<td class=\"FS\"  style=\"font-family:sans-serif;\">"  +"<a class=\"fav_a\" >"  +   FS    +    "</a>" +    "</td>"+
+				"<td class=\"FC\"  style=\"font-family:sans-serif;\">"       +FC+        "</td>"+
+				"<td class=\"SP\"  style=\"font-family:sans-serif;\">" +"$ " +SP+ "</td>" +
+				CCP+
+				MCC+
+				"<td   >"+"<button id=\"tra\" type=\"button\"  style=\"background-color:rgb(235,235,235)\"  class=\"btn btn-default btn tra\"  >"+ "<span class=\"glyphicon glyphicon-trash\">"+"</span>"+ "</button>"+"</td>"+
+			"</tr>"
+						
+		
+		
+		
+		);
+		}
+		
+		
+		
+		//Failure case when no data is returned by PHP file
+
+		else
+		{
+		
+		
+		}
+
+         },
+	  
+	  error: function(data)
+	  {
+	  //alert("Failure");
+	  
+	  }
+	  
+	  
+    });
+
+	}
+
+	
+	
+
+	
+	
+}
+
+
+
+//Activate Carousal
+$("#myCarousel").carousel({
+interval:false  //disable the automatic movement of the carousal to next next etc
+
+});
+
+// Enable Carousel Indicators
+$("#next").click(function(){
+//if the stock symbol that you search is there in fav list then change the color if it to yellow
+
+	var set=0;
+	//var stock=$("#stock").val().toUpperCase();
+	
+	//alert(stock);
+	main_favsym=JSON.parse(localStorage.getItem("favsym"));
+//alert(main_favsym);
+
+//if the stock that we search is there in fav list then change the color of star button to yellow
+
+	if(main_favsym!=null)	//case when there is no element in the buffer to display 
+	{
+	
+		//alert("The main buffer is empty");
+		for(i=0;i<main_favsym.length;i++)
+		{
+			FS=main_favsym[i];
+			//alert(FS);
+			//alert("FS:"+FS+"stock:"+stock+"text:"+$text);
+			
+			
+			if(FS==Symbol  ){
+			$("#star_ins").css("color","yellow");
+			//alert("The searched stock is same as fav list")
+			//alert("1st case FS=stock");
+						}
+			
+		
+						
+		}
+	}
+
+	//alert($text);
+	
+	//alert("Stock:"+Symbol+"text"+$text);
+	if(Symbol==$text)
+	{
+	$("#star_ins").css("color","yellow"); 
+	//alert("Setting color yellow ");
+	}
+	
+	else{
+	$("#star_ins").css("color","white"); 
+	//alert("Setting color white");
+	}
+	
+
+      $("#myCarousel").carousel(1); // first change the Carousal	 
+
+	  
+  });
+  
+		 //for deleting an entire row on click of trash icon
+ 
+$(document).on("click","#tra",function(){
+   var $row = $(this).closest("tr");    // Find the row
+   $text = $row.find(".FS").text(); // Find the text
+   //alert($text);
+   //alert(JSON.parse(localStorage.getItem("favsym")));
+   check=JSON.parse(localStorage.getItem("favsym"));
+   //alert(check.length);
+   for(var i=0;i<check.length;i++)
+   {
+   //alert(check[i]);
+   if(check[i]==$text)
+   {
+   
+   check.splice(i,1);
+   }
+   }
+   //alert("Check after" +check);
+   localStorage.setItem("favsym", JSON.stringify(check)); 	//set the check array back to local storage
+ 
+ $(this).closest("tr").remove();
+ //alert($(this).closest("tr"));
+
+    
+    // Let's test it out
+    
+ 
+ 
+});
+
+
+
+
+$("#prev").click(function(){
+	
+	//alert("Stock:"+Symbol+"text"+$text);
+	if(Symbol==$text)
+	{
+	$("#star_ins").css("color","yellow"); 
+	//alert("Setting color yellow ");
+	}
+	
+	else{
+	$("#star_ins").css("color","white"); 
+	//alert("Setting color white");
+	}
+	
+ 	//change the color of button to yellow
+	$("#myCarousel").carousel(0);
+  });  
+
+  //This method is for the on click of get Quote we call the JQuery function
+$("#get_quote").click( function(){
+
+//if($("#stock").val()=="")
+//{
+//alert("Empty");
+//$("#next").prop('disabled', true);	
+//return;
+//}
+
+//STAT1="";
+
+$("#star_ins").css("color","white");
+//alert("Initially setting to white");
+
+$("#next").prop('disabled', false);		//first enable the next button
+
+	//first erase the previous data of News_Content
+	$("#News_Content").html('');
+
+
+	var stock=$("#stock").val().toUpperCase();
+	//alert(stock);
+	main_favsym=JSON.parse(localStorage.getItem("favsym"));
+	//alert(main_favsym);
+	
+	if(main_favsym!=null)		//case when there is no element in the buffer to dispalay 
+	{
+	
+	//alert("The main buffer is empty");
+		for(i=0;i<main_favsym.length;i++)
+		{
+			FS=main_favsym[i];
+			//alert(FS);
+			if(FS==stock){
+			$("#star_ins").css("color","yellow");
+			//alert("Setting yellow");
+						}
+	
+		}
+	}
+	
+//if the stock that we search is there in fav list then change the color of star button to yellow
+
+	
+	
+	
+	
+	//alert($("#stock").val() );
+	
+	//data = $(this).serialize() + "&" + $.param(data);
+	
+	//ajax code -- needs to be modified
+	$.ajax({
+	   beforeSend:function(){
+            $("#current_info").text("Loading current stock info...");
+        },
+	  
+	  type: "GET",
+      dataType: "json",
+      url: "http://arjunaws-env.us-west-2.elasticbeanstalk.com", //Relative or absolute path to arjunaws-env.us-west-2.elasticbeanstalk.com file
+      data: {"Sym":stock},
+      success: function(data) {
+	  
+	  //alert(JSON.stringify(data));
+		
+		status=data.Status;
+		STAT1=data.Status;
+		//alert("Ajax call for Current Stock: "+status);
+
+		//alert(data.status);
+		if(data.status==undefined)
+		{
+		
+		//alert(data.status);
+		if($('div.active').index()==1)
+		{
+		//alert("Moving back to carousel 0");
+		$("#myCarousel").carousel(0);
+		}
+				//move to home screen
+		//STAT1="FAILURE";
+		$("#er").html("Select a valid entry");
+		$("#next").prop('disabled', true);	//disable the next symbol
+		//alert($('div.active').index());
+		//STAT1="";
+		}
+		
+		
+		
+		
+		
+		if(status=="SUCCESS")
+		{
+		
+		$("#er").html(""); //if success remove the error message
+		
+		
+		 Name=data.Name;
+		 Symbol=data.Symbol;
+		 LastPrice=data.LastPrice;
+		 //Modify Change field
+		 Change=data.Change;
+		 //alert(Change);
+		 Change=parseFloat(Change).toFixed(2);
+		 //alert(Change);
+		 
+		 
+		 ChangePercent=data.ChangePercent;
+		 ChangePercent_org=parseFloat(ChangePercent).toFixed(2);
+		 
+		if(ChangePercent_org<0)
+		{
+			ChangePercent="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change (Change Percent)"+"</th>" + "<td style=\"color:red\"            >"+Change +" ( "+ChangePercent_org+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangePercent);
+			
+			//for local storage in fav section
+			fav_change="<td class=\"CCP\"  style=\"color:red; font-family:sans-serif\"            >"+Change +" ( "+ChangePercent_org+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" ;
+		}
+		else 
+		{
+			ChangePercent="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change (Change Percent)"+"</th>" + "<td  style=\"color:green\"                >"+Change +" ( "+ChangePercent_org+  "%"+ " )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"UP!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangePercent);
+			
+			//for local storege in fav section
+			fav_change="<td class=\"CCP\" style=\"color:green; font-family:sans-serif\"            >"+Change +" ( "+ChangePercent_org+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" ;
+		}
+		 
+		 
+		 
+		 
+		 
+		 Timestamp=data.Timestamp;
+		// alert(Timestamp);
+		 Timestamp=moment(Timestamp).format('DD MMMM YYYY, HH:MM:SS a');
+		 //alert(Timestamp);
+		 MSDate=data.MSDate;
+		 MarketCap=data.MarketCap;
+		 MarketCap_org=MarketCap;
+		 if(MarketCap> 1000000000)
+		 {
+		 MarketCap=MarketCap/1000000000;
+		 MarketCap=parseFloat(MarketCap).toFixed(2);
+		 MarketCap=MarketCap+" Billion";
+		 //alert(MarketCap);
+		 fav_MarketCap="<td class=\"MCC\" style=\"font-family:sans-serif\">"+MarketCap+ "</td>";
+		 }
+		 else if(MarketCap>1000000)
+		 {
+		 MarketCap = MarketCap/1000000 ;
+		 MarketCap=parseFloat(MarketCap).toFixed(2);
+		 MarketCap=MarketCap+" Million";
+		 fav_MarketCap="<td class=\"MCC\" style=\"font-family:sans-serif\">"+MarketCap+ "</td>";
+		 
+		 }
+		 
+		
+		 	
+         MarketCap= "<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Market Cap"+"</th>"+ "<td>"+MarketCap+"</td>"+"</tr>";
+		 //alert(MarketCap);
+		 
+		 Volume=data.Volume;
+		 //alert(Volume);
+		 
+		 ChangeYTD=data.ChangeYTD;
+		 //alert("The ChangeYTD from JSON is "+ChangeYTD);
+		 ChangeYTD=parseFloat(ChangeYTD).toFixed(2);
+		 
+		 ChangePercentYTD=data.ChangePercentYTD;
+		 ChangePercentYTD=parseFloat(ChangePercentYTD).toFixed(2);
+		 if(ChangePercentYTD<0)
+		{
+			ChangeYTD="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change YTD (Change Percent YTD)"+"</th>" + "<td style=\"color:red\">"+ChangeYTD +" ( "+ChangePercentYTD+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangeYTD);
+		}
+		else 
+		{
+			ChangeYTD="<tr>" +"<th style=\"font-weight:bold; font-family:sans-serif\">"+"Change YTD (Change Percent YTD)"+"</th>" + "<td  style=\"color:green\">"+ChangeYTD +" ( "+ChangePercentYTD+  "%"+ " )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"UP!\" width=\"15\" height=\"15 \"> </img>" +"</td>" +"</tr>";
+			//alert(ChangeYTD);
+		}
+		 
+		 
+		 
+		 
+		 
+		 
+		 //alert(ChangePercentYTD);
+		 High=data.High;
+		 High=parseFloat(High).toFixed(2);
+		 Low=data.Low;
+		 Low=parseFloat(Low).toFixed(2);
+		 Open=data.Open;
+		 Open=parseFloat(Open).toFixed(2);
+		 
+		
+		 
+		 
+		 $("#current_info").html(
+		 
+			
+		 		 "<table class= \"table table-striped\">"+
+					"<tr>" +
+						"<th >  Name </th>" + "<td>"+Name+"</td>"+
+					"</tr>"+
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Symbol </th>" + "<td>"+Symbol+"</td>"+
+					"</tr>"+
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Last Price </th>" + "<td>"+"$ "+LastPrice+"</td>"+
+					"</tr>"+
+					
+					ChangePercent +
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Time and Date </th>" + "<td>"+Timestamp+"</td>"+
+					"</tr>"+					
+					
+					MarketCap + 
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Volume </th>" + "<td>"+Volume+"</td>"+
+					"</tr>"+					
+					
+					ChangeYTD +
+					
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  High Price </th>" + "<td>"+"$ "+High+"</td>"+
+					"</tr>"+					
+		 
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Low Price </th>" + "<td>"+"$ "+Low+"</td>"+
+					"</tr>"+		 
+
+					"<tr>" +
+						"<th style=\"font-weight:bold; font-family:sans-serif\">  Opening Price </th>" + "<td>"+"$ "+Open+"</td>"+
+					"</tr>"+					
+		 
+		 		"</table>"
+		 
+		 );
+		 
+		 //alert("The current_info height:"+$("#Cur_Stock").height()); 
+		 
+		 //alert("<img src=\"http://chart.finance.yahoo.com/t?s="+Symbol+"&lang=en-US&width=400&height=300\">");
+		 
+		 $("#yahoo").html(
+		 
+		"<img class=\"yahooImg\" src=\"http://chart.finance.yahoo.com/t?s="+Symbol+"&lang=en-US&width=270&height=350\" style=\"min-width:100%;max-height:350px;\">"
+		 
+		 
+		  
+		 
+		 );
+		 
+
+		
+		
+		//alert(data.Open);
+		
+		//document.getElementByID("current_info").innerHTML=Open;
+		
+		$("#myCarousel").carousel(1);
+		
+		}
+		
+		
+		
+		//Failure case when no data is returned by PHP file
+
+		else
+		{
+		
+		
+		}
+
+         },
+	  
+	  error: function(data)
+	  {
+	  //alert("Failure");
+	  
+	  }
+	  
+	  
+    });
+	
+//2nd ajax call for the news feed
+
+
+	var stock=$("#stock").val().toUpperCase();
+	
+	$.ajax({
+	   beforeSend:function(){
+            $("#News_Content").text("Loading current stock info...");
+        },
+	  type: "GET",
+      dataType: "json",
+      url: "http://arjunaws-env.us-west-2.elasticbeanstalk.com", //Relative or absolute path to arjunaws-env.us-west-2.elasticbeanstalk.com file
+      data: {"feed":stock},  //set the feed value
+	  success: function(data) {
+	  //alert(JSON.stringify(data));
+	  //alert(data.responseData.results[0]);
+	  //var d=JSON.stringify(data);
+	  //alert(d);
+	  //alert(data.responseData.results.length);
+
+
+	  
+	  
+	  //alert(JSON.stringify(data.responseStatus));
+	  if(data.responseStatus==200)
+	  {
+	  $("#News_Content").html("");
+	  //alert("Call for 2nd News feed call status: " +data.responseStatus);
+	  
+
+
+		  for(i=0;i<data.responseData.results.length;i++)
+		{
+			entry=data.responseData.results[i];
+			//alert(eval(JSON.stringify(entry.content)));
+			title=entry.titleNoFormatting;
+			//alert(title);
+			content=entry.content;
+			//alert(content);
+			publisher=entry.publisher;
+			//alert(publisher);
+			link=entry.unescapedUrl;
+			//alert(link);
+			date_time=entry.publishedDate;
+			date_time=date_time.substring(0,25);
+			//alert(date_time);
+			
+			
+	  
+			$("#News_Content").append(
+	  
+				"<div class=\"panel panel-default\" style=\"background: linear-gradient(rgb(232,232,232),rgb(244,244,244) );\"      >"+
+					
+			
+						"<p><a href=\""+link+"\" style=\"color:#5B91C1;\" target=\"_blank\"><strong>"+title+"</strong></a></p>"+
+									
+						"<p>"+content+"</p>"+
+							
+						"<p ><strong>Publisher: "+publisher+"</strong></p>"+
+						
+						"<p><strong>Date: "+date_time+"</strong></p>"+
+			
+					
+				"</div>"
+	  
+	   );
+	  
+	 	  
+	  }  
+	  
+	  
+	  
+	  }
+	  
+	  else
+	  {
+	  //alert("Couldnt get the data at this time");	  
+	  
+	  }
+	  
+	  
+
+
+	  },
+	  error: function(data)
+	  {
+	  //alert("Failure");
+	  
+	  }
+	
+	});
+
+
+//3rd call to Historical Charts
+
+	$(function(){
+
+		var sym = $("#stock").val().toUpperCase() ;
+		var dur = 1095 ;
+		
+		new Markit.InteractiveChartApi(sym, dur);
+	});
+
+	
+	
+//if(STAT1=="SUCCESS")
+//{
+//alert("Moving automatically");	
+//alert($("#er").text());
+//$("#myCarousel").carousel(1);
+
+
+//}	
+	
+	
+	
+	
+	
+	
+	
+});
+
+
+
+$("#t3").click(function(){});
+
+		// for the star button next to facebook
+		 $("#starbutton").click(function(){
+		
+		//alert($("#stock").val().toUpperCase());
+		var stock=$("#stock").val().toUpperCase();
+		//alert(stock);
+		main_favsym=JSON.parse(localStorage.getItem("favsym"));
+		//alert(main_favsym);
+		//alert($text);
+		//if the stock that we search is there in fav list then change te color of star button to yellow
+	if(main_favsym!=null)	//case when there is no element in the buffer to dispalay 
+	{
+		for(i=0;i<main_favsym.length;i++)
+		{
+			FS=main_favsym[i];
+			if(FS==stock){
+			$("#star_ins").css("color","yellow"); 
+			alert("This stock is already part of your favourites!!");
+			return;
+	
+			}
+	
+		}
+
+	}		
+		//alert($("#star_ins").css("color"));
+
+		if($("#star_ins").css("color")=="rgb(255, 255, 0)")
+		{
+			alert("This stock is already part of your favourites!!");
+			return;
+		
+		}
+		
+		 $("#star_ins").css("color","yellow");  	//change the color of button to yellow
+
+		 
+		 
+// set the data in local storage
+
+		//alert(JSON.parse(localStorage.getItem("favsym")));
+		
+		if( JSON.parse(localStorage.getItem("favsym")) ==null )				//when adding the first element the favsym array is null or empty soft
+		{
+		check.push(Symbol);
+		localStorage.setItem("favsym", JSON.stringify(check));
+		}
+		
+		else{
+		
+		check=JSON.parse(localStorage.getItem("favsym"));
+		check.push(Symbol);
+		localStorage.setItem("favsym", JSON.stringify(check));
+		
+		}
+		
+		
+		//alert(check);
+		
+		fav_cnme.push(Name);
+		localStorage.setItem("favcomp", JSON.stringify(fav_cnme));
+		fav_csp.push(LastPrice);
+		localStorage.setItem("favsp", JSON.stringify(fav_csp));
+		fav_cch.push(Change);
+		localStorage.setItem("favch", JSON.stringify(fav_cch));
+		fav_ccp.push(ChangePercent_org);
+		localStorage.setItem("favcp", JSON.stringify(fav_ccp));
+		fav_cmp.push(MarketCap_org);
+		localStorage.setItem("favmc", JSON.stringify(fav_cmp));
+		
+		
+		
+		$("#main_tab").append(
+		//html code for the entire row
+		
+			"<tr class=\"DR\">"+
+				"<td class=\"FS\" style=\"font-family:sans-serif;\">"  +"<a class=\"fav_a\" >"           +$("#stock").val()+  "</a>" +    "</td>"+
+				"<td class=\"FC\" style=\"font-family:sans-serif;\">"       +Name+        "</td>"+
+				"<td class=\"SP\" style=\"font-family:sans-serif;\">" +"$ "+ +LastPrice+ "</td>" +
+				fav_change+
+				fav_MarketCap+
+				"<td  >"+"<button id=\"tra\" type=\"button\" style=\"background-color:rgb(235,235,235)\"  class=\"btn btn-default btn tra\"  >"+ "<span class=\"glyphicon glyphicon-trash\">"+"</span>"+ "</button>"+"</td>"+
+			"</tr>"
+						
+		
+		
+		
+		);
+		
+		
+
+		 
+		 
+		 
+		 
+		 });
+		 
+
+
+		
+		 
+
+  
+  
+});
+
+//This is for the tabs to show the content
+$('#t1').click(function(e) {
+  //e.preventDefault();
+  $(this).tab('show');
+});
+
+$('#t1').click(function(e) {
+  //e.preventDefault();
+  $(this).tab('show');
+});
+
+
+$(document).on('click','#refresh',function() {
+//alert("You clicked refresh");
+
+refresh_data();
+
+});
+
+
+function refresh_data(){
+
+//alert("called refresh_data method");
+
+//main_tab
+$("#main_tab tr.DR").each(function (){
+var $this=$(this);
+var my_td=$this.children("td");
+var first_col=my_td.eq(0);
+first_col=first_col.children("a").eq(0).html();		//obtain the content under the anchor element 
+var third_col=my_td.eq(2);
+var foutrh_col=my_td.eq(3);
+//alert(first_col+" "+third_col.html()+ " " +foutrh_col.html());
+
+
+
+//set up ajax call
+	$.ajax({
+	  type: "GET",
+      dataType: "json",
+      url: "http://arjunaws-env.us-west-2.elasticbeanstalk.com", //Relative or absolute path to arjunaws-env.us-west-2.elasticbeanstalk.com file
+      data: {"Sym":first_col},
+      success: function(data) {
+	  
+	  //alert(JSON.stringify(data));
+		
+		ST=data.Status;
+	//	alert("Ajax call for Current Stock: "+ST);
+		if(ST=="SUCCESS")
+		{
+		 SP=data.LastPrice;
+		 SP=parseFloat(SP).toFixed(2);
+		 //alert(SP);
+		 //Modify Change field
+		 CH=data.Change;
+		 //alert(CH);
+		 //alert(CH);
+		 CH=parseFloat(CH).toFixed(2);
+		 //alert(CH);
+		 
+		 
+		 CP=data.ChangePercent;
+		 CP=parseFloat(CP).toFixed(2);
+		 //alert(CP);
+		 
+		if(CH<0)
+			{
+				CCP="<td class=\"CCP\" style=\"color:red\">"+CH +" ( "+CP+ "%"+" )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/down.png\" alt=\"down!\" width=\"15\" height=\"15 \"> </img>" +"</td>" ;
+			//	alert(CCP);
+			
+			
+
+			}
+		else 
+			{
+				CCP="<td  class=\"CCP\" style=\"color:green\"                >"+CH +" ( "+CP+  "%"+ " )"+             " "+"<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/up.png\" alt=\"UP!\" width=\"15\" height=\"15 \"> </img>" +"</td>";
+				//alert(CCP);
+			
+			}
+		 
+		 		 
+		 
+		third_col.replaceWith(
+		//"html code for the entire row"
+				"<td class=\"SP\"  style=\"font-family:sans-serif;\">" +"$ " +SP+ "</td>" 
+				);
+				
+		foutrh_col.replaceWith(CCP);
+		//alert(CCP);
+		}
+
+		
+		
+		
+		//Failure case when no data is returned by PHP file
+
+		else
+		{
+		
+		
+		}
+
+         },
+	  
+	  error: function(data)
+	  {
+	  //alert("Failure");
+	  
+	  }
+	  
+	  
+    });
+
+});
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+//This is for on click of clear button disable the next button
+
+$(document).on("click","#cls",function(){
+//alert("You clicked clear");
+$("#next").prop('disabled', true);
+$("#er").html("");
+$("#myCarousel").carousel(0);
+});
+
+
+$(document).on('change', '[type=checkbox]', function (e) {
+
+if($('input[type=checkbox]').is(':checked'))		//if check box is on
+{
+//alert('clicked');
+var interval = setInterval(refresh_data, 5000);
+//refresh_data();
+}
+
+});
+
+
+
+
+//for resize of High-charts issue
+
+
+
+</script>
+
+</head>
+<body>
+
+<script>
+  window.fbAsyncInit = function() {
+  FB.init({
+    appId      : '961271783968045',
+    cookie     : true,  // enable cookies to allow the server to access 
+                        // the session
+    xfbml      : true,  // parse social plugins on this page
+    version    : 'v2.5' // use graph api version 2.5
+  });
+
+  // Now that we've initialized the JavaScript SDK, we call 
+  // FB.getLoginStatus().  This function gets the state of the
+  // person visiting this page and can return one of three states to
+  // the callback you provide.  They can be:
+  //
+  // 1. Logged into your app ('connected')
+  // 2. Logged into Facebook, but not your app ('not_authorized')
+  // 3. Not logged into Facebook and can't tell if they are logged into
+  //    your app or not.
+  //
+  // These three cases are handled in the callback function.
+
+
+
+  };
+
+
+  
+   (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+  
+  
+  $(document).on('click','#facebook',function() {
+
+//alert("You clicked share!!");
+  FB.ui({
+    display: 'popup',
+    method: 'share',
+    href: 'http://dev.markitondemand.com/MODApis/',
+title:"Current Stock Price of "+Name+" is $"+LastPrice,
+   picture:"http://chart.finance.yahoo.com/t?s="+Symbol+"&lang=en-US&width=200&height=190",
+caption: "LAST TRADE PRICE:$ "+LastPrice+", CHANGE: "+Change+"("+ChangePercent_org+"%)",
+description: "Stock Information of "+Name+" ("+Symbol+")"
+  }, function(response){
+    if (response && !response.error_message) {
+      alert('Posted Successfully');
+    } else {
+      alert('Not Posted');
+    }});
+});
+
+</script>
+<br>
+<div class="outer_container"> 
+	<div class="container" >
+	<form class="form-inline" role="form" method="GET" onsubmit="return false;" >
+		<div class="panel panel-default" >
+			<div class="row">
+				<div class="col-md-12">
+				<h4><p style="font-weight:bold; font-family:sans-serif;text-align:center">Stock Market Search</p></h4>
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="col-md-3" text-align="center" style="font-weight:bold; font-family:sans-serif">
+			
+			Enter the stock name or symbol:<span style="color:red">*</span>
+			
+			</div>
+		
+			<div class="col-md-6">
+			<p>
+			<label for="stock"></label>
+			<input type="text" class="form-control" id="stock"  placeholder="Apple Inc or AAPL" required="true" style="width:98%">
+			
+			</div>
+			
+			<div class="col-md-3">
+			<button type="submit" id="get_quote" class="btn btn-default" style="background-color:rgb(28,82,116); color:white">
+			<span class="glyphicon glyphicon-search" style="background-color:rgb(28,82,116); color:white"></span> Get Quote
+			</button>
+			
+			<button type="reset" id="cls" class="btn btn-default" style="background-color:rgb(235,235,235)">
+			<span class="glyphicon glyphicon-refresh"></span> Clear
+			</button>
+			</p>
+			</div>
+			
+			
+
+		</div>
+		
+		<div class="row">
+			<div class="col-md-3" text-align="center" style="font-weight:bold; font-family:sans-serif">
+			
+			
+			
+			</div>
+		
+			<div class="col-md-6" style="color:red;padding-left:2%;font-family:sans-serif" id="er">
+			
+			</div>
+
+	
+			<div class="col-md-3 " style="font-weight:bold" >
+				
+
+					Powered By:	<a href="http://dev.markitondemand.com/MODApis/" target="_blank">
+					<img src="http://cs-server.usc.edu:45678/hw/hw8/images/mod-logo.png" alt="Markit on demand"  width="120px"> </a>
+				
+			</div>
+			
+		</div>
+		
+		
+	</div>
+  </form>
+
+
+<!-- This is for the horizontal line after the panel !-->
+<div style="border-bottom: 1px solid #ccc;"> </div>
+<br>
+
+<!-- Code for Carousal	!-->
+
+
+<div id="myCarousel" class="carousel slide" data-ride="carousel"  data-interval="false">
+
+  <!-- Wrapper for slides -->
+  <div class="carousel-inner" role="listbox">
+	<div class="item active">		<!-- This is the default item displayed on the home page -->
+		<div class="panel panel-default">
+			<div class="panel panel-default" style="padding:0">             <!-- disable padding for the second item -->
+				<div class="panel-heading" style="background-color:rgb(245,245,245)">
+					<div class="row">
+						<div class="col-md-12" >
+								<span style="float:left; font-weight:bold; font-family:sans-serif;">Favourite List</span>
+						
+								<span style="float:right">
+								<span class="hid">		Automatic Refresh </span>
+						
+								<input type="checkbox"  data-toggle="toggle" style="background-color:rgb(235,235,235)" id="auto_refresh" >
+								<button type="button" class="btn btn-default btn" style="background-color:rgb(235,235,235)" id="refresh" > <span class="glyphicon glyphicon-refresh"></span> </button>
+								<button type="button" class="btn btn-default btn" style="background-color:rgb(235,235,235)" id="next" > <span class="glyphicon glyphicon-menu-right"></span> </button>
+									
+							</span>
+						</div>
+						
+				</div>
+			</div>
+			
+
+
+
+			<div class="panel-body" >
+				  <div class="table-responsive" >          
+					<table class="table table-striped" >
+					    <tbody  id="main_tab">
+							<tr>
+								<td id="Symbol" style="font-weight:bold; font-family:sans-serif;">Symbol</td>
+								<td id="Company_Name" style="font-weight:bold; font-family:sans-serif;">Company Name</td>
+								<td id="Stock_Price" style="font-weight:bold; font-family:sans-serif;">Stock Price</td>
+								<td id="change_cp" style="font-weight:bold; font-family:sans-serif;">Change(Change Percent)</td>
+								<td id="market_cap" style="font-weight:bold; font-family:sans-serif;">Market Cap</td>
+								<td ></td>
+							</tr>
+						</tbody>
+					</table>
+			
+			
+					</div>		
+			</div>
+		</div>
+  </div>
+	  
+	  
+	  
+    </div>
+	
+
+    <div class="item">			
+		<!-- This is the more details  item -->
+      
+		<div class="panel panel-default">
+			<div class="panel panel-default" style="padding:0" > 
+				<div class="panel-heading" style="background-color:rgb(245,245,245)">
+					<div class="row" style="text-align:center">
+						<div class="col-md-12" >
+						<button type="button" class="btn btn-default btn" id="prev" style="float:left;background-color:rgb(235,235,235)" > <span class="glyphicon glyphicon-menu-left"></span> </button>
+						<b> Stock Details</b>
+						
+					
+						</div>
+					</div>
+				</div>
+				
+				<div class="panel-body" >
+				
+				<ul class="nav nav-pills">
+					<li class="active"><a id="t1" data-toggle="pill" href="#Cur_Stock"><span class="glyphicon glyphicon-dashboard"></span> Current Stock</a></li>
+					<li><a  id="t2" data-toggle="pill" href="#Hist_Charts"><span class="glyphicon glyphicon-stats"></span> Historical Charts</a></li>
+					<li><a  id="t3" data-toggle="pill" href="#New_Feed"><span class="glyphicon glyphicon-link"></span> News Feeds</a></li>
+				</ul>
+  
+  
+				<hr style="color: black;  background-color:black;" />
+				
+				
+				<div class="tab-content" id="panelid">
+					<div id="Cur_Stock" class="tab-pane fade in active">
+						<div class="row">
+							<div class="col-md-12" style="height:40px">
+								<span style="text-align:center; font-weight:bold; font-family:sans-serif;padding-left:2%;float:left">Stock Details</span>
+								<span id="fb_star" style="float:right;"><img id="facebook" src="fb.png" width="35px" height="35px" >
+								<button type="button" id="starbutton" class="btn btn-default btn" style="background-color:rgb(235,235,235)" width="35px" height="35px"> <i  id="star_ins" class="fa fa-star " style="font-size:20px;color:rgb(255,255,255);" ></i> </button>	
+								</span>
+							
+							</div>
+							
+							
+						
+						
+						
+						</div>
+					
+					
+					
+					
+						<div class="row">
+							<div class="col-md-6">
+								<p id="current_info">Loading Current Info..</p>
+							
+							
+							</div>
+							
+							
+							<div class="col-md-6">
+								<div id="yahoo"> </div>
+								
+							</div>
+							
+						
+						
+						</div>
+					
+					
+					
+							
+					</div>
+					
+					<div id="Hist_Charts" class="tab-pane fade" >
+				    <hr/>
+				    <div class="row">
+							<div id="hist_chart" class="col-md-12" style="max-width:1080px;overflow:visible" >
+							Loading Historical Charts..	
+							</div>
+                    </div>
+						
+					</div>
+					
+					<div id="New_Feed" class="tab-pane fade">
+						<div class="row">
+							<div class="col-md-12">
+								<p id="News_Content">Loading News Content..</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				</div>
+			</div>
+		</div>
+	  
+	  
+	  
+	  
+	  
+	  
+    </div>
+
+<!--  this -->
+  <!-- Left and right controls --> 
+  
+  
+</div>    
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+</div>
+</div>
+
+</div>  
+    
+
+</body>
+</html>
